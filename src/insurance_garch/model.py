@@ -22,12 +22,11 @@ from __future__ import annotations
 import itertools
 import warnings
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import pandas as pd
 from arch import arch_model
-from arch.univariate import ARCHModelResult
 
 from insurance_garch.series import MIN_OBSERVATIONS
 
@@ -47,7 +46,7 @@ class GARCHResult:
 
     Attributes
     ----------
-    arch_result : ARCHModelResult
+    arch_result : Any  # ARCHModelResult from arch.univariate
         The underlying arch library result. Accessible for advanced users
         who want residual diagnostics, parameter t-stats, etc.
     vol_spec : str
@@ -62,7 +61,7 @@ class GARCHResult:
         The original series used for fitting.
     """
 
-    arch_result: ARCHModelResult
+    arch_result: Any  # ARCHModelResult from arch.univariate
     vol_spec: str
     distribution: str
     mean_spec: str
@@ -182,9 +181,11 @@ class GARCHResult:
             _, ax = plt.subplots(figsize=(10, 4))
 
         cv = self.conditional_volatility
-        ax.plot(cv.index, cv.values, color="#1f77b4", linewidth=1.5,
+        # Convert PeriodIndex to datetime for matplotlib compatibility
+        x_vals = cv.index.to_timestamp() if hasattr(cv.index, "to_timestamp") else cv.index
+        ax.plot(x_vals, cv.values, color="#1f77b4", linewidth=1.5,
                 label="Conditional volatility (annualised)")
-        ax.fill_between(cv.index, 0, cv.values, alpha=0.15, color="#1f77b4")
+        ax.fill_between(x_vals, 0, cv.values, alpha=0.15, color="#1f77b4")
         ax.set_xlabel("Period")
         ax.set_ylabel("Annualised volatility")
         ax.set_title(
