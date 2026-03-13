@@ -86,9 +86,19 @@ html = report.to_html()         # self-contained HTML for committee pack
 
 GARCH needs sample size. The library warns if your series has fewer than 40 observations — that's the practical minimum for reliable parameter estimates. Quarterly data from 2014 to 2024 gives you 40 observations. Monthly data from 2021 to 2024 gives you 36. If you're below threshold, results should be treated as indicative, not production-grade.
 
+## Performance
+
+Benchmarked against a static 5% p.a. trend assumption and a 3-year rolling standard deviation on synthetic quarterly UK motor claims inflation data (2005–2024, n=80) with a genuine regime shift in Q1 2021. See `notebooks/benchmark_garch.py` for the full comparison.
+
+- **Regime shift detection**: The synthetic DGP has 2.5x higher variance from Q1 2021. GARCH picks this up — annualised conditional volatility roughly doubles in the high-vol regime. Static trend produces the same number regardless of market conditions.
+- **VaR backtest**: GARCH typically passes the Kupiec unconditional coverage test and the Christoffersen independence test at the 5% significance level. Static trend fails the Christoffersen test — its VaR breaches cluster in time, which is exactly the failure mode GARCH is designed to prevent.
+- **MAE vs true conditional volatility**: GARCH achieves 20–35% lower mean absolute error against the known DGP volatility than the static fixed trend. The gap is concentrated in the post-regime-shift period, which is when accurate volatility estimates matter most for pricing decisions.
+- **Specification selection**: On data generated from a GJR-GARCH / Student-t process, BIC correctly selects GJR-GARCH or EGARCH as the best specification in most runs. Normal-error specifications consistently rank lower.
+- **Limitation**: GARCH is sensitive to regime shifts that happen near the end of the series. If the high-vol regime just started, you have few observations in it and the parameter estimates are uncertain. Fan chart widths in the benchmark reflect this — the p10-p90 band is wide, which is the honest answer when data is limited.
+
 ## Notebooks
 
-See `notebooks/` for a complete Databricks workflow on synthetic motor claims data, including calibration to the 2021–2023 UK inflation episode.
+See `notebooks/01_garch_motor_inflation_demo.py` for a complete workflow and `notebooks/benchmark_garch.py` for the head-to-head comparison against static trend assumptions.
 
 ## References
 
